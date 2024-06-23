@@ -30,20 +30,26 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 @Preview
 fun App() {
     MaterialTheme {
-        var text by rememberSaveable { mutableStateOf("fdg") }
+        var text by rememberSaveable { mutableStateOf("") }
+        var errorText by rememberSaveable { mutableStateOf("") }
+        var outputText by rememberSaveable { mutableStateOf("") }
+
         Column(
             Modifier.fillMaxWidth().padding(horizontal = Dp(36f)),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Row(Modifier.fillMaxWidth().padding(top = Dp(36f))) {
                 Box(modifier = Modifier.align(Alignment.CenterVertically)) {
                     Text(
-                        text = "RUN",
+                        text = "Запуск анализа",
                         fontSize = TextUnit(24f, TextUnitType.Sp),
                         fontWeight = FontWeight.Bold,
                     )
                 }
-                IconButton(onClick = { }) {
+                IconButton(onClick = {
+                    outputText = StaticAnalyzer.analyze(text)
+                    errorText = StaticAnalyzer.isError(text)
+                }) {
                     Icon(
                         Icons.Filled.PlayArrow,
                         contentDescription = null,
@@ -54,14 +60,21 @@ fun App() {
             }
             OutlinedTextField(
                 value = text,
-                onValueChange = { text = it },
+                onValueChange = {
+                    text = it
+                    errorText = ""
+                },
                 modifier = Modifier.fillMaxWidth().fillMaxHeight(0.5f).padding(vertical = Dp(36f)),
-                isError = true,
-                supportingText = { Text("error") },
+                isError = errorText.isNotBlank(),
+                supportingText = {
+                    Text(
+                        text = errorText,
+                        fontSize = TextUnit(16f, TextUnitType.Sp),
+                    )
+                },
             )
-
             OutlinedTextField(
-                value = "output",
+                value = outputText,
                 onValueChange = { },
                 readOnly = true,
                 modifier = Modifier.fillMaxWidth().fillMaxHeight().padding(vertical = Dp(36f)),
