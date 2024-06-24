@@ -1,3 +1,6 @@
+import java.util.LinkedList
+import java.util.Queue
+
 object StaticAnalyzer {
 
     fun analyze(text: String): String {
@@ -9,7 +12,7 @@ object StaticAnalyzer {
     }
 
     private fun parse(text: String): SyntaxTree {
-        val deque: ArrayDeque<Char> = ArrayDeque(text.toList())
+        val deque: Queue<Char> = LinkedList(text.toList())
         return SyntaxTree(
             root = SyntaxTree.Node(
                 value = Token(type = TokenType.S),
@@ -19,11 +22,11 @@ object StaticAnalyzer {
         )
     }
 
-    private fun ArrayDeque<Char>.parse_d(): SyntaxTree.Node {
-        require(removeFirstAlsoDropIfBlank() == 'd' && removeFirstOrNull() == 'o') { "Блок do отсутствует" }
-        require(removeFirstAlsoDropIfBlank() == '{') { "Блок do не открыт - отсутствует '{'" }
+    private fun Queue<Char>.parse_d(): SyntaxTree.Node {
+        require(pollAlsoDropIfBlank() == 'd' && poll() == 'o') { "Блок do отсутствует" }
+        require(pollAlsoDropIfBlank() == '{') { "Блок do не открыт - отсутствует '{'" }
         val centerNode = parse_A()
-        require(removeFirstAlsoDropIfBlank() == '}') { "Блок do не закрыт - отсутствует '}'" }
+        require(pollAlsoDropIfBlank() == '}') { "Блок do не закрыт - отсутствует '}'" }
         return SyntaxTree.Node(
             value = Token(type = TokenType.d),
             left = SyntaxTree.Node(value = Token(value = "do {")),
@@ -32,15 +35,15 @@ object StaticAnalyzer {
         )
     }
 
-    private fun ArrayDeque<Char>.parse_w(): SyntaxTree.Node {
+    private fun Queue<Char>.parse_w(): SyntaxTree.Node {
         require(
-            removeFirstAlsoDropIfBlank() == 'w' && removeFirstOrNull() == 'h' &&
-                    removeFirstOrNull() == 'i' && removeFirstOrNull() == 'l' &&
-                    removeFirstOrNull() == 'e'
+            pollAlsoDropIfBlank() == 'w' && poll() == 'h' &&
+                    poll() == 'i' && poll() == 'l' &&
+                    poll() == 'e'
         ) { "Блок while отсутствует" }
-        require(removeFirstAlsoDropIfBlank() == '(') { "Блок while не открыт - отсутствует '('" }
+        require(pollAlsoDropIfBlank() == '(') { "Блок while не открыт - отсутствует '('" }
         val centerNode = parse_B()
-        require(removeFirstAlsoDropIfBlank() == ')') { "Блок while не закрыт - отсутствует ')'" }
+        require(pollAlsoDropIfBlank() == ')') { "Блок while не закрыт - отсутствует ')'" }
         return SyntaxTree.Node(
             value = Token(type = TokenType.w),
             left = SyntaxTree.Node(value = Token(value = "while (")),
@@ -49,12 +52,12 @@ object StaticAnalyzer {
         )
     }
 
-    private fun ArrayDeque<Char>.parse_B(): SyntaxTree.Node {
-        val variable = firstAlsoDropIfBlank()
+    private fun Queue<Char>.parse_B(): SyntaxTree.Node {
+        val variable = peekAlsoDropIfBlank()
         requireNotNull(variable) { "Условие в блоке while не дописано" }
         val expression1 = parse_E()
         requireNotNull(expression1) { "Условие в блоке while отсутствует" }
-        val comparator = parse_comporator()
+        val comparator = parse_comparator()
         val expression2 = parse_E()
         requireNotNull(expression2) { "Выражение в блоке while не закончено" }
         return SyntaxTree.Node(
@@ -68,11 +71,11 @@ object StaticAnalyzer {
         )
     }
 
-    private fun ArrayDeque<Char>.parse_comporator(): SyntaxTree.Node {
+    private fun Queue<Char>.parse_comparator(): SyntaxTree.Node {
         val first =
-            removeFirstAlsoDropIfBlank() ?: error("Ожидалась операция сравнения в блоке while")
+            pollAlsoDropIfBlank() ?: error("Ожидалась операция сравнения в блоке while")
         if (first !in comparators) error("Ожидалась операция сравнения в блоке while")
-        val second = firstAlsoDropIfBlank() ?: error("Условие в блоке while не дописано")
+        val second = peekAlsoDropIfBlank() ?: error("Условие в блоке while не дописано")
         if (first !in listOf('=', '!') && second.isLetterOrDigit()) {
             return SyntaxTree.Node(
                 value = Token(
@@ -81,7 +84,7 @@ object StaticAnalyzer {
                 )
             )
         } else {
-            removeFirst()
+            remove()
             if (second != '=') {
                 error("Неизвестный токен \"$first\" в блоке while")
             } else {
@@ -95,13 +98,13 @@ object StaticAnalyzer {
         }
     }
 
-    private fun ArrayDeque<Char>.parse_A(): SyntaxTree.Node? {
-        val variable = firstAlsoDropIfBlank()
+    private fun Queue<Char>.parse_A(): SyntaxTree.Node? {
+        val variable = peekAlsoDropIfBlank()
         requireNotNull(variable) { "Тело цикла в блоке do не дописано" }
         if (variable == '}') return null
-        removeFirst()
+        remove()
         require(variable.isLetter()) { "В блоке do ожидалась переменная, а не \"$variable\"" }
-        val op = removeFirstAlsoDropIfBlank()
+        val op = pollAlsoDropIfBlank()
         require(op == '=') { "Ожидалась операция присваивания в блоке do, а не \"$op\"" }
         val expression = parse_E()
         requireNotNull(expression) { "Выражение в блоке do не закончено  \"${"$variable="}\"" }
@@ -116,12 +119,12 @@ object StaticAnalyzer {
         )
     }
 
-    private fun ArrayDeque<Char>.parse_E(): SyntaxTree.Node? {
-        val expectedVarOrDigit = firstAlsoDropIfBlank() ?: return null
+    private fun Queue<Char>.parse_E(): SyntaxTree.Node? {
+        val expectedVarOrDigit = peekAlsoDropIfBlank() ?: return null
         if (expectedVarOrDigit == '}' || expectedVarOrDigit == ')') return null
-        removeFirst()
+        remove()
         require(expectedVarOrDigit.isLetterOrDigit()) { "Некорректное выражение \"$expectedVarOrDigit\"" }
-        val expectedOperation = firstAlsoDropIfBlank()
+        val expectedOperation = peekAlsoDropIfBlank()
 
         if (expectedOperation == null || expectedOperation == '}' || expectedOperation == ')'
             || isPossibleComparator(expectedOperation)
@@ -133,7 +136,7 @@ object StaticAnalyzer {
                 ),
             )
         }
-        removeFirst()
+        remove()
         require(expectedOperation in operations) { "Символ \"$expectedOperation\" не поддерживается" }
         val right = parse_E()
         requireNotNull(right) { "Выражение \"${expectedVarOrDigit.toString() + expectedOperation}\" не закончено" }
@@ -158,19 +161,19 @@ object StaticAnalyzer {
         )
     }
 
-    private fun ArrayDeque<Char>.firstAlsoDropIfBlank(): Char? {
-        var ch = firstOrNull()
+    private fun Queue<Char>.peekAlsoDropIfBlank(): Char? {
+        var ch = peek()
         while (ch?.isWhitespace() == true) {
-            removeFirst()
-            ch = firstOrNull()
+            remove()
+            ch = peek()
         }
         return ch
     }
 
-    private fun ArrayDeque<Char>.removeFirstAlsoDropIfBlank(): Char? {
-        var ch = removeFirstOrNull()
+    private fun Queue<Char>.pollAlsoDropIfBlank(): Char? {
+        var ch = poll()
         while (ch?.isWhitespace() == true) {
-            ch = removeFirstOrNull()
+            ch = poll()
         }
         return ch
     }
