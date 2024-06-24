@@ -26,20 +26,28 @@ class SyntaxTree(var root: Node? = null) {
         var right: Node? = null,
     )
 
-    override fun toString(): String {
-        return printTree(root, 0)
-    }
+    override fun toString(): String = printTree(root, isRoot = true)
 
-    private fun printTree(root: Node?, level: Int): String {
+    private fun printTree(
+        root: Node?,
+        padding: String = "",
+        pointer: String = "",
+        hasLeftSibling: Boolean = false,
+        isRoot: Boolean = false,
+    ): String {
         if (root == null) return ""
-        var string = ""
-        string += printTree(root.right, level + 1)
+        var string = padding + pointer + root.value + "\n"
 
-        string += "    ".repeat(level + 1) + root.value.toString() + "\n"
-
-        string += printTree(root.center, level + 1)
-
-        string += printTree(root.left, level + 1)
+        val paddingForBoth = padding + if (isRoot) "" else {
+            if (hasLeftSibling) "│     " else "      "
+        }
+        val pointerLeft = "└──"
+        val pointerCenter = if (root.right != null) "├──" else "└──"
+        val rightHasSibling = root.center != null || root.left != null
+        val pointerRight = if (rightHasSibling) "├──" else "└──"
+        string += printTree(root.right, paddingForBoth, pointerRight, rightHasSibling)
+        string += printTree(root.center, paddingForBoth, pointerCenter, root.left != null)
+        string += printTree(root.left, paddingForBoth, pointerLeft, false)
         return string
     }
 }
