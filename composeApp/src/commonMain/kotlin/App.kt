@@ -1,10 +1,12 @@
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
@@ -31,14 +33,13 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 fun App() {
     MaterialTheme {
         var text by rememberSaveable { mutableStateOf("") }
-        var errorText by rememberSaveable { mutableStateOf("") }
         var outputText by rememberSaveable { mutableStateOf("") }
 
         Column(
             Modifier.fillMaxWidth().padding(horizontal = Dp(36f)),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Row(Modifier.fillMaxWidth().padding(top = Dp(36f))) {
+            Row(Modifier.fillMaxWidth().padding(vertical = Dp(36f))) {
                 Box(modifier = Modifier.align(Alignment.CenterVertically)) {
                     Text(
                         text = "Запуск анализа",
@@ -48,7 +49,6 @@ fun App() {
                 }
                 IconButton(onClick = {
                     outputText = StaticAnalyzer.analyze(text)
-                    errorText = StaticAnalyzer.isError(text)
                 }) {
                     Icon(
                         Icons.Filled.PlayArrow,
@@ -58,27 +58,33 @@ fun App() {
                     )
                 }
             }
-            OutlinedTextField(
-                value = text,
-                onValueChange = {
-                    text = it
-                    errorText = ""
-                },
-                modifier = Modifier.fillMaxWidth().fillMaxHeight(0.5f).padding(vertical = Dp(36f)),
-                isError = errorText.isNotBlank(),
-                supportingText = {
-                    Text(
-                        text = errorText,
-                        fontSize = TextUnit(16f, TextUnitType.Sp),
-                    )
-                },
-            )
-            OutlinedTextField(
-                value = outputText,
-                onValueChange = { },
-                readOnly = true,
-                modifier = Modifier.fillMaxWidth().fillMaxHeight().padding(vertical = Dp(36f)),
-            )
+            Row(Modifier.fillMaxWidth().padding(bottom = Dp(36f))) {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    modifier = Modifier.fillMaxHeight().fillMaxWidth().weight(1f),
+                    label = {
+                        Text(
+                            text = "Введите текст для анализа",
+                            fontSize = TextUnit(16f, TextUnitType.Sp),
+                        )
+                    },
+                )
+                Spacer(Modifier.width(Dp(36f)))
+                OutlinedTextField(
+                    value = outputText,
+                    onValueChange = { },
+                    readOnly = true,
+                    modifier = Modifier.fillMaxHeight().fillMaxWidth().weight(1f),
+                    label = {
+                        Text(
+                            text = "Построенное синтаксическое дерево",
+                            fontSize = TextUnit(16f, TextUnitType.Sp),
+                        )
+                    },
+                )
+            }
+
         }
     }
 }
