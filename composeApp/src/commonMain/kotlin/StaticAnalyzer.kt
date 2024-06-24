@@ -51,12 +51,12 @@ object StaticAnalyzer {
 
     private fun ArrayDeque<Char>.parse_B(): SyntaxTree.Node {
         val variable = firstAlsoDropIfBlank()
-        requireNotNull(variable) { "Условие не дописано" }
+        requireNotNull(variable) { "Условие в блоке while не дописано" }
         val expression1 = parse_E()
-        requireNotNull(expression1) { "Условие отсутствует" }
+        requireNotNull(expression1) { "Условие в блоке while отсутствует" }
         val comparator = parse_comporator()
         val expression2 = parse_E()
-        requireNotNull(expression2) { "Выражение не закончено" }
+        requireNotNull(expression2) { "Выражение в блоке while не закончено" }
         return SyntaxTree.Node(
             value = Token(
                 type = TokenType.B,
@@ -69,10 +69,11 @@ object StaticAnalyzer {
     }
 
     private fun ArrayDeque<Char>.parse_comporator(): SyntaxTree.Node {
-        val first = removeFirstAlsoDropIfBlank() ?: error("Ожидалась операция сравнения")
-        if (first !in comparators) error("Ожидалась операция сравнения")
-        val second = firstAlsoDropIfBlank() ?: error("Условие не дописано")
-        if (second.isLetterOrDigit()) {
+        val first =
+            removeFirstAlsoDropIfBlank() ?: error("Ожидалась операция сравнения в блоке while")
+        if (first !in comparators) error("Ожидалась операция сравнения в блоке while")
+        val second = firstAlsoDropIfBlank() ?: error("Условие в блоке while не дописано")
+        if (first !in listOf('=', '!') && second.isLetterOrDigit()) {
             return SyntaxTree.Node(
                 value = Token(
                     type = TokenType.C,
@@ -82,7 +83,7 @@ object StaticAnalyzer {
         } else {
             removeFirst()
             if (second != '=') {
-                error("Неизвестный токен $first$second")
+                error("Неизвестный токен \"$first\" в блоке while")
             } else {
                 return SyntaxTree.Node(
                     value = Token(
@@ -96,13 +97,14 @@ object StaticAnalyzer {
 
     private fun ArrayDeque<Char>.parse_A(): SyntaxTree.Node? {
         val variable = firstAlsoDropIfBlank()
-        requireNotNull(variable) { "Тело цикла не дописано" }
+        requireNotNull(variable) { "Тело цикла в блоке do не дописано" }
         if (variable == '}') return null
         removeFirst()
-        require(variable.isLetter()) { "Ожидалась переменная" }
-        require(removeFirstAlsoDropIfBlank() == '=') { "Ожидалась операция присваивания" }
+        require(variable.isLetter()) { "В блоке do ожидалась переменная, а не \"$variable\"" }
+        val op = removeFirstAlsoDropIfBlank()
+        require(op == '=') { "Ожидалась операция присваивания в блоке do, а не \"$op\"" }
         val expression = parse_E()
-        requireNotNull(expression) { "Выражение не закончено" }
+        requireNotNull(expression) { "Выражение в блоке do не закончено  \"${"$variable="}\"" }
         return SyntaxTree.Node(
             value = Token(
                 type = TokenType.A,
@@ -118,7 +120,7 @@ object StaticAnalyzer {
         val expectedVarOrDigit = firstAlsoDropIfBlank() ?: return null
         if (expectedVarOrDigit == '}' || expectedVarOrDigit == ')') return null
         removeFirst()
-        require(expectedVarOrDigit.isLetterOrDigit()) { "Некорректное выражение" }
+        require(expectedVarOrDigit.isLetterOrDigit()) { "Некорректное выражение \"$expectedVarOrDigit\"" }
         val expectedOperation = firstAlsoDropIfBlank()
 
         if (expectedOperation == null || expectedOperation == '}' || expectedOperation == ')'
@@ -132,9 +134,9 @@ object StaticAnalyzer {
             )
         }
         removeFirst()
-        require(expectedOperation in operations) { "Символ $expectedOperation не поддерживается" }
+        require(expectedOperation in operations) { "Символ \"$expectedOperation\" не поддерживается" }
         val right = parse_E()
-        requireNotNull(right) { "Выражение не закончено" }
+        requireNotNull(right) { "Выражение \"${expectedVarOrDigit.toString() + expectedOperation}\" не закончено" }
         return SyntaxTree.Node(
             value = Token(
                 type = TokenType.E,
